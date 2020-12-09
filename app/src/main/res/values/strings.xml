@@ -6,4 +6,5 @@
     <string name="company_name">Company name</string>
     <string name="addresses">Addresses</string>
     <string name="contacts">Contacts</string>
+    <string name="error_getting_data">Error getting the data</string>
 </resources>

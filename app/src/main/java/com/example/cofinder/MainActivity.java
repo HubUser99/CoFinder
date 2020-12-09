@@ -3,46 +3,35 @@ package com.example.cofinder;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.annotation.SuppressLint;
+import android.app.AlertDialog;
+import android.app.Dialog;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
-import android.net.NetworkRequest;
 import android.widget.LinearLayout;
-import android.widget.ScrollView;
 import android.widget.TextView;
 
-import com.android.volley.Request;
-import com.android.volley.RequestQueue;
 import com.android.volley.Response;
-import com.android.volley.VolleyError;
-import com.android.volley.toolbox.StringRequest;
-import com.android.volley.toolbox.Volley;
 import com.example.cofinder.common.Api;
 import com.example.cofinder.common.Utils;
 import com.example.cofinder.schema.BisAddress;
 import com.example.cofinder.schema.BisCompanyContactDetail;
 import com.example.cofinder.schema.BusinessData;
 import com.example.cofinder.schema.BusinessDataResult;
+import com.example.cofinder.schema.StatusCodes;
 import com.google.gson.Gson;
-import com.google.gson.JsonParser;
-import com.google.gson.stream.JsonReader;
 
 import org.json.JSONObject;
 
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class MainActivity extends AppCompatActivity {
     private final String TAG = "CoFinderMSG";
-    @SuppressLint("StaticFieldLeak")
-    private static Context mContext;
     LinearLayout linearLayoutScrollView;
     TextView textViewCompanyId;
     EditText editTextCompanyId;
@@ -52,7 +41,6 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        mContext = this;
 
         initializeData();
         initializeViews();
@@ -85,22 +73,32 @@ public class MainActivity extends AppCompatActivity {
         List<BisAddress> addresses = businessDataResult.addresses;
         List<BisCompanyContactDetail> contactDetails = businessDataResult.contactDetails.stream().filter(contact -> contact.language.equals("FI")).collect(Collectors.toList());
 
+        renderBusinessIdAndName(businessId, name);
+        renderAddresses(addresses);
+        renderContacts(contactDetails);
+    }
+
+    private void renderBusinessIdAndName(String businessId, String companyName) {
         TextView businessIdLabel = (TextView) getLayoutInflater().inflate(R.layout.item_label, linearLayoutScrollView, false);
         TextView companyNameLabel = (TextView) getLayoutInflater().inflate(R.layout.item_label, linearLayoutScrollView, false);
         TextView businessIdItem = (TextView) getLayoutInflater().inflate(R.layout.item, linearLayoutScrollView, false);
         TextView companyNameItem = (TextView) getLayoutInflater().inflate(R.layout.item, linearLayoutScrollView, false);
-        TextView addressesLabel = (TextView) getLayoutInflater().inflate(R.layout.item_label, linearLayoutScrollView, false);
 
         businessIdLabel.setText(R.string.business_id);
         companyNameLabel.setText(R.string.company_name);
         businessIdItem.setText(businessId);
-        companyNameItem.setText(name);
-        addressesLabel.setText(R.string.addresses);
+        companyNameItem.setText(companyName);
 
         linearLayoutScrollView.addView(businessIdLabel);
         linearLayoutScrollView.addView(businessIdItem);
         linearLayoutScrollView.addView(companyNameLabel);
         linearLayoutScrollView.addView(companyNameItem);
+    }
+
+    private void renderAddresses(List<BisAddress> addresses) {
+        TextView addressesLabel = (TextView) getLayoutInflater().inflate(R.layout.item_label, linearLayoutScrollView, false);
+        addressesLabel.setText(R.string.addresses);
+
         linearLayoutScrollView.addView(addressesLabel);
 
         for (BisAddress address : addresses) {
@@ -109,9 +107,12 @@ public class MainActivity extends AppCompatActivity {
             addressItem.setOnClickListener(addressOnClick);
             linearLayoutScrollView.addView(addressItem);
         }
+    }
 
+    private void renderContacts(List<BisCompanyContactDetail> contactDetails) {
         TextView contactsLabel = (TextView) getLayoutInflater().inflate(R.layout.item_label, linearLayoutScrollView, false);
         contactsLabel.setText(R.string.contacts);
+
         linearLayoutScrollView.addView(contactsLabel);
 
         for (BisCompanyContactDetail contact : contactDetails) {
@@ -162,17 +163,21 @@ public class MainActivity extends AppCompatActivity {
     };
 
     Response.ErrorListener apiErrorListener = error -> {
-        Log.d(TAG, ": " + error.getMessage());
+        showErrorPopup(StatusCodes.getStatusMessage(error.networkResponse.statusCode));
     };
+
+    private void showErrorPopup(String errorMessage) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setMessage(errorMessage).setTitle(R.string.error_getting_data);
+
+        AlertDialog dialog = builder.create();
+        dialog.show();
+    }
 
     Button.OnClickListener buttonSearchOnClick = (view) -> {
         String businessId = editTextCompanyId.getText().toString();
-        String apiUrl = Utils.buildApiUrl(businessId);
+        String apiUrl = Utils.buildApiUrl(this, businessId);
 
         Api.sendApiRequest(this, apiUrl, apiResponseListener, apiErrorListener);
     };
-
-    public static Context getContext() {
-        return mContext;
-    }
 }
