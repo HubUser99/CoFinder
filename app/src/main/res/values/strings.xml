@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">CoFinder</string>
+    <string name="business_id">Business ID</string>
+    <string name="business_id_hint">business ID like: 1234567–8</string>
+    <string name="search">Search</string>
+    <string name="company_name">Company name</string>
+    <string name="addresses">Addresses</string>
+    <string name="contacts">Contacts</string>
+</resources>
